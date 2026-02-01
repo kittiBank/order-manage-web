@@ -8,6 +8,7 @@ import {
   calculatePasswordStrength,
   getPasswordRequirements,
 } from "@/lib/passwordStrength";
+import { authAPI } from "@/lib/api/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -72,18 +73,36 @@ export default function RegisterPage() {
 
     setIsLoading(true);
 
-    // Mock registration - replace with real API later
-    setTimeout(() => {
+    try {
+      // Call real API
+      const response = await authAPI.register({
+        email: formData.email,
+        password: formData.password,
+        name: formData.fullName,
+        role: "CUSTOMER", // Default role for registration
+      });
+
       setIsLoading(false);
-      showSuccessAlert(
-        "Account Created!",
-        "Welcome to Order Management System",
+
+      // Show success with email verification notice
+      await showSuccessAlert(
+        "Account Created Successfully!",
+        `Welcome ${response.user.name}! A verification email has been sent to ${formData.email}. Please check your inbox and verify your email before logging in.`,
       );
-      // Navigate to login or orders page
+
+      // Navigate to login page
       setTimeout(() => {
-        router.push("/order/infinite");
-      }, 1500);
-    }, 1000);
+        router.push("/");
+      }, 2000);
+    } catch (error: any) {
+      setIsLoading(false);
+      console.error("Registration error:", error);
+
+      // Show user-friendly error message
+      const errorMessage =
+        error.message || "Failed to create account. Please try again.";
+      showErrorAlert("Registration Failed", errorMessage);
+    }
   };
 
   return (
