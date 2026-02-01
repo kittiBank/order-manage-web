@@ -1,45 +1,59 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Order as APIOrder, ordersAPI, GetOrdersQuery } from '@/lib/api/orders';
 import { OrderFilters, OrderFormData } from '@/app/types/order';
 import OrderTable from '@/app/components/OrderTable';
 import OrderFiltersComponent from '@/app/components/OrderFilters';
 import OrderModal from '@/app/components/OrderModal';
-import Navbar from '@/app/components/Navbar';
 import { showSuccessAlert, showConfirmDialog, showErrorAlert } from '@/lib/sweetAlert';
 import { useUser } from '@/app/contexts/UserContext';
-import { useRouter } from 'next/navigation';
+import { useUrlState } from '@/app/hooks/useUrlState';
 
 export default function OrdersPage() {
-  const router = useRouter();
   const { user, accessToken } = useUser();
   const queryClient = useQueryClient();
   
-  const [filters, setFilters] = useState<OrderFilters>({ sortBy: 'newest' });
+  // Use URL state for filters - supports sharing, back/forward, refresh
+  const [urlFilters, setUrlFilters] = useUrlState(
+    {
+      sortBy: 'newest' as OrderFilters['sortBy'],
+      status: undefined as OrderFilters['status'],
+      customerId: undefined as string | undefined,
+      minPrice: undefined as number | undefined,
+      maxPrice: undefined as number | undefined,
+      cursor: undefined as string | undefined,
+    },
+    { replace: true, debounce: 300 }
+  );
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<APIOrder | null>(null);
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
   const limit = 10;
 
-  // Redirect if not authenticated
-  React.useEffect(() => {
-    if (!user || !accessToken) {
-      router.push('/');
-    }
-  }, [user, accessToken, router]);
+  // Convert URL filters to OrderFilters type
+  const filters: OrderFilters = {
+    sortBy: urlFilters.sortBy,
+    status: urlFilters.status,
+    customerId: urlFilters.customerId,
+    minPrice: urlFilters.minPrice,
+    maxPrice: urlFilters.maxPrice,
+  };
+
+  const cursor = urlFilters.cursor;
 
   // Build query params from filters
   const queryParams: GetOrdersQuery = {
     cursor,
     limit,
     customerId: filters.customerId,
+    status: filters.status,
     // API only supports 'createdAt' and 'total' for sortBy
     sortBy: filters.sortBy === 'price-asc' || filters.sortBy === 'price-desc'
       ? 'total'
       : 'createdAt',
-    sortOrder: filters.sortBy?.includes('desc') ? 'desc' : 'asc',
+    sortOrder: filters.sortBy?.includes('desc') || filters.sortBy === 'oldest' ? 'desc' : 'asc',
   };
 
   // Fetch orders with React Query
@@ -115,12 +129,8 @@ export default function OrdersPage() {
 
   const handleUpdateOrder = (formData: OrderFormData) => {
     if (editingOrder) {
+      // Note: Backend doesn't allow updating items after order creation
       const updateData = {
-        items: formData.items.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-        })),
         shippingAddress: formData.shippingAddress,
         note: formData.note,
         status: formData.status,
@@ -149,8 +159,20 @@ export default function OrdersPage() {
 
   const handleLoadMore = () => {
     if (data?.pagination.nextCursor) {
-      setCursor(data.pagination.nextCursor);
+      setUrlFilters((prev) => ({ ...prev, cursor: data.pagination.nextCursor || undefined }));
     }
+  };
+
+  // Handler to update filters (syncs with URL)
+  const handleFiltersChange = (newFilters: OrderFilters) => {
+    setUrlFilters({
+      sortBy: newFilters.sortBy,
+      status: newFilters.status,
+      customerId: newFilters.customerId,
+      minPrice: newFilters.minPrice,
+      maxPrice: newFilters.maxPrice,
+      cursor: undefined, // Reset cursor when filters change
+    });
   };
 
   // Convert API orders to display format
@@ -158,12 +180,7 @@ export default function OrdersPage() {
   const pagination = data?.pagination;
   const hasMore = pagination?.hasMore || false;
 
-  // Reset cursor when filters change
-  React.useEffect(() => {
-    setCursor(undefined);
-  }, [filters]);
-
-  // Apply client-side filters (price range and customer sort)
+  // Apply client-side filters (price range and status)
   let filteredOrders = orders.filter(order => {
     if (filters.minPrice !== undefined && order.total < filters.minPrice) {
       return false;
@@ -174,11 +191,15 @@ export default function OrdersPage() {
     return true;
   });
 
-  // Apply client-side customer sorting if needed
+  // Apply client-side sorting
   if (filters.sortBy === 'customer-asc') {
     filteredOrders = [...filteredOrders].sort((a, b) => a.customerId.localeCompare(b.customerId));
   } else if (filters.sortBy === 'customer-desc') {
     filteredOrders = [...filteredOrders].sort((a, b) => b.customerId.localeCompare(a.customerId));
+  } else if (filters.sortBy === 'id-asc') {
+    filteredOrders = [...filteredOrders].sort((a, b) => a.id.localeCompare(b.id));
+  } else if (filters.sortBy === 'id-desc') {
+    filteredOrders = [...filteredOrders].sort((a, b) => b.id.localeCompare(a.id));
   }
 
   // Show loading state on initial load
@@ -187,53 +208,51 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-blue-900">Order Management</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Manage your orders with ease. Total: {pagination?.total || 0} orders
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setEditingOrder(null);
+              setIsModalOpen(true);
+            }}
+            className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 duration-200"
+          >
+            + Create Order
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <OrderFiltersComponent filters={filters} onFiltersChange={handleFiltersChange} />
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex">
+            <svg className="h-5 w-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
             <div>
-              <h1 className="text-3xl font-bold text-blue-900">Order Management</h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Manage your orders with ease. Total: {pagination?.total || 0} orders
-              </p>
+              <h3 className="text-sm font-medium text-red-800">Error loading orders</h3>
+              <p className="text-sm text-red-700 mt-1">{(error as any)?.message || 'Failed to load orders'}</p>
+              <button 
+                onClick={() => refetch()}
+                className="mt-2 text-sm text-red-600 hover:text-red-500 underline"
+              >
+                Try again
+              </button>
             </div>
-            <button
-              onClick={() => {
-                setEditingOrder(null);
-                setIsModalOpen(true);
-              }}
-              className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 duration-200"
-            >
-              + Create Order
-            </button>
           </div>
         </div>
-
-        {/* Filters */}
-        <OrderFiltersComponent filters={filters} onFiltersChange={setFilters} />
-
-        {/* Error State */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex">
-              <svg className="h-5 w-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              <div>
-                <h3 className="text-sm font-medium text-red-800">Error loading orders</h3>
-                <p className="text-sm text-red-700 mt-1">{(error as any)?.message || 'Failed to load orders'}</p>
-                <button 
-                  onClick={() => refetch()}
-                  className="mt-2 text-sm text-red-600 hover:text-red-500 underline"
-                >
-                  Try again
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+      )}
 
         {/* Loading State */}
         {isLoading && (
@@ -342,7 +361,6 @@ export default function OrdersPage() {
           onSave={editingOrder ? handleUpdateOrder : handleCreateOrder}
           order={editingOrder as any}
         />
-      </div>
     </div>
   );
 }

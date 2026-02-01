@@ -1,20 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { showSuccessAlert, showErrorAlert } from "@/lib/sweetAlert";
 import { useUser } from "@/app/contexts/UserContext";
 import { authAPI } from "@/lib/api/auth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useUser();
+  const searchParams = useSearchParams();
+  const { login, isAuthenticated } = useUser();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  // Get return URL from query params
+  const returnUrl = searchParams.get('returnUrl') || '/order/infinite';
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push(returnUrl);
+    }
+  }, [isAuthenticated, returnUrl, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,13 +46,16 @@ export default function LoginPage() {
         role: response.user.role as "ADMIN" | "SELLER" | "CUSTOMER",
       };
 
-      login(user, response.accessToken, response.refreshToken);
+      // expiresIn is typically in the response, default to 3600 seconds (1 hour)
+      const expiresIn = (response as any).expiresIn || 3600;
+      
+      login(user, response.accessToken, response.refreshToken, expiresIn);
       setIsLoading(false);
       showSuccessAlert("Login Successful!", `Welcome back, ${user.name}!`);
 
-      // Navigate to orders page
+      // Navigate to return URL or default page
       setTimeout(() => {
-        router.push("/order/infinite");
+        router.push(returnUrl);
       }, 1500);
     } catch (error: any) {
       setIsLoading(false);
