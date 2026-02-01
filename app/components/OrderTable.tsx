@@ -28,11 +28,13 @@ export default function OrderTable({ orders, onEdit, onDelete }: OrderTableProps
   };
 
   const getStatusColor = (status: Order['status']) => {
-    const colors = {
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      processing: 'bg-blue-100 text-blue-800 border-blue-200',
-      completed: 'bg-green-100 text-green-800 border-green-200',
-      cancelled: 'bg-red-100 text-red-800 border-red-200',
+    const colors: Record<Order['status'], string> = {
+      PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      CONFIRMED: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      PROCESSING: 'bg-blue-100 text-blue-800 border-blue-200',
+      SHIPPED: 'bg-purple-100 text-purple-800 border-purple-200',
+      DELIVERED: 'bg-green-100 text-green-800 border-green-200',
+      CANCELLED: 'bg-red-100 text-red-800 border-red-200',
     };
     return colors[status];
   };
@@ -53,13 +55,19 @@ export default function OrderTable({ orders, onEdit, onDelete }: OrderTableProps
               Customer
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">
-              Items
+              Item ID
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">
+              Quantity
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">
+              Price
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">
               Shipping To
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">
-              Total Amount
+              Item Total
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">
               Status
@@ -73,67 +81,68 @@ export default function OrderTable({ orders, onEdit, onDelete }: OrderTableProps
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {orders.map((order) => (
-            <tr key={order.id} className="hover:bg-blue-50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">#{order.id}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">{order.customerId}</div>
-              </td>
-              <td className="px-6 py-4">
-                <div className="text-sm text-gray-900">
-                  {order.items.length} item{order.items.length > 1 ? 's' : ''}
-                  <div className="text-xs text-gray-500 mt-1">
-                    {order.items.slice(0, 2).map((item, idx) => (
-                      <div key={idx}>
-                        {item.productName} x{item.quantity}
-                      </div>
-                    ))}
-                    {order.items.length > 2 && (
-                      <div className="text-blue-600">+{order.items.length - 2} more</div>
-                    )}
+          {orders.flatMap((order) =>
+            order.items.map((item, itemIdx) => (
+              <tr
+                key={`${order.id}-${itemIdx}`}
+                className="hover:bg-blue-50 transition-colors"
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">#{order.id}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{order.customerId}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-blue-100 text-blue-800">
+                    {item.productId}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{item.quantity}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{formatPrice(item.price)}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900">{order.shippingAddress.name}</div>
+                  <div className="text-xs text-gray-500">{order.shippingAddress.phone}</div>
+                  <div className="text-xs text-gray-500">{order.shippingAddress.province}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-semibold text-gray-900">
+                    {formatPrice(item.quantity * item.price)}
                   </div>
-                </div>
-              </td>
-              <td className="px-6 py-4">
-                <div className="text-sm text-gray-900">{order.shippingAddress.name}</div>
-                <div className="text-xs text-gray-500">{order.shippingAddress.phone}</div>
-                <div className="text-xs text-gray-500">{order.shippingAddress.province}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-semibold text-gray-900">
-                  {formatPrice(calculateTotal(order))}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span
-                  className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getStatusColor(
-                    order.status
-                  )}`}
-                >
-                  {order.status}
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {formatDate(order.createdAt)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button
-                  onClick={() => onEdit(order)}
-                  className="text-blue-600 hover:text-blue-900 mr-4"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => onDelete(order.id)}
-                  className="text-red-600 hover:text-red-900"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getStatusColor(
+                      order.status
+                    )}`}
+                  >
+                    {order.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {formatDate(order.createdAt)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={() => onEdit(order)}
+                    className="text-blue-600 hover:text-blue-900 mr-4"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => onDelete(order.id)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

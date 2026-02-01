@@ -18,10 +18,14 @@ export interface Order {
   customerId: string;
   items: OrderItem[];
   shippingAddress: ShippingAddress;
+  subtotal: number;
+  shippingFee: number;
+  total: number;
   note?: string;
-  status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
   createdAt: string;
-  totalAmount?: number;
+  updatedAt: string;
+  totalAmount?: number; // Computed field for compatibility
 }
 
 export interface OrderFormData {
@@ -29,7 +33,7 @@ export interface OrderFormData {
   items: OrderItem[];
   shippingAddress: ShippingAddress;
   note?: string;
-  status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 }
 
 export interface OrderFilters {

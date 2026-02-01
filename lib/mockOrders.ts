@@ -16,8 +16,12 @@ export const mockOrders: Order[] = [
       postalCode: '10110'
     },
     note: 'Please deliver before 5 PM',
-    status: 'completed',
+    status: 'DELIVERED',
     createdAt: '2026-01-28T10:30:00Z',
+    updatedAt: '2026-01-28T15:30:00Z',
+    subtotal: 92690,
+    shippingFee: 100,
+    total: 92790,
     totalAmount: 92690
   },
   {
@@ -34,8 +38,12 @@ export const mockOrders: Order[] = [
       postalCode: '10120'
     },
     note: 'Corporate order - Invoice required',
-    status: 'processing',
+    status: 'PROCESSING',
     createdAt: '2026-01-29T14:20:00Z',
+    updatedAt: '2026-01-29T16:20:00Z',
+    subtotal: 42500,
+    shippingFee: 150,
+    total: 42650,
     totalAmount: 42500
   },
   {
@@ -51,8 +59,12 @@ export const mockOrders: Order[] = [
       province: 'Bangkok',
       postalCode: '10500'
     },
-    status: 'pending',
+    status: 'PENDING',
     createdAt: '2026-01-30T09:15:00Z',
+    updatedAt: '2026-01-30T09:15:00Z',
+    subtotal: 8900,
+    shippingFee: 50,
+    total: 8950,
     totalAmount: 8900
   },
   {
@@ -69,8 +81,12 @@ export const mockOrders: Order[] = [
       postalCode: '10400'
     },
     note: 'Gift wrapping requested',
-    status: 'completed',
+    status: 'DELIVERED',
     createdAt: '2026-01-31T16:45:00Z',
+    updatedAt: '2026-01-31T20:45:00Z',
+    subtotal: 3600,
+    shippingFee: 50,
+    total: 3650,
     totalAmount: 3600
   },
   {
@@ -86,8 +102,12 @@ export const mockOrders: Order[] = [
       province: 'Bangkok',
       postalCode: '10330'
     },
-    status: 'pending',
+    status: 'PENDING',
     createdAt: '2026-02-01T08:00:00Z',
+    updatedAt: '2026-02-01T08:00:00Z',
+    subtotal: 5250,
+    shippingFee: 50,
+    total: 5300,
     totalAmount: 5250
   }
 ];

@@ -137,7 +137,7 @@ export default function RegisterPage() {
                   setFormData({ ...formData, fullName: e.target.value });
                   if (errors.fullName) setErrors({ ...errors, fullName: "" });
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 ${
                   errors.fullName ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="John Doe"
@@ -164,7 +164,7 @@ export default function RegisterPage() {
                   setFormData({ ...formData, email: e.target.value });
                   if (errors.email) setErrors({ ...errors, email: "" });
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 ${
                   errors.email ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="you@example.com"
@@ -192,7 +192,7 @@ export default function RegisterPage() {
                     setFormData({ ...formData, password: e.target.value });
                     if (errors.password) setErrors({ ...errors, password: "" });
                   }}
-                  className={`w-full px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  className={`w-full px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 ${
                     errors.password ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="••••••••"
@@ -325,7 +325,7 @@ export default function RegisterPage() {
                     if (errors.confirmPassword)
                       setErrors({ ...errors, confirmPassword: "" });
                   }}
-                  className={`w-full px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  className={`w-full px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 ${
                     errors.confirmPassword
                       ? "border-red-500"
                       : "border-gray-300"

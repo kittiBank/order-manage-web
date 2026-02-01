@@ -23,7 +23,7 @@ export default function OrderModal({ isOpen, onClose, onSave, order }: OrderModa
       postalCode: ''
     },
     note: '',
-    status: 'pending',
+    status: 'PENDING',
   });
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function OrderModal({ isOpen, onClose, onSave, order }: OrderModa
           postalCode: ''
         },
         note: '',
-        status: 'pending',
+        status: 'PENDING',
       });
     }
   }, [order, isOpen]);
@@ -162,7 +162,7 @@ export default function OrderModal({ isOpen, onClose, onSave, order }: OrderModa
                           required
                           value={item.productId}
                           onChange={(e) => handleProductChange(index, e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                         >
                           <option value="">Select Product</option>
                           {mockProducts.map((product) => (
@@ -184,7 +184,7 @@ export default function OrderModal({ isOpen, onClose, onSave, order }: OrderModa
                           min="1"
                           value={item.quantity}
                           onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                         />
                       </div>
 
@@ -200,7 +200,7 @@ export default function OrderModal({ isOpen, onClose, onSave, order }: OrderModa
                           step="0.01"
                           value={item.price}
                           onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 text-gray-900"
                           readOnly
                         />
                       </div>
@@ -255,7 +255,7 @@ export default function OrderModal({ isOpen, onClose, onSave, order }: OrderModa
                     ...formData,
                     shippingAddress: { ...formData.shippingAddress, name: e.target.value }
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="Full name"
                 />
               </div>
@@ -272,7 +272,7 @@ export default function OrderModal({ isOpen, onClose, onSave, order }: OrderModa
                     ...formData,
                     shippingAddress: { ...formData.shippingAddress, phone: e.target.value }
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="0812345678"
                 />
               </div>
@@ -289,7 +289,7 @@ export default function OrderModal({ isOpen, onClose, onSave, order }: OrderModa
                     shippingAddress: { ...formData.shippingAddress, address: e.target.value }
                   })}
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="Street address, building, floor"
                 />
               </div>
@@ -306,7 +306,7 @@ export default function OrderModal({ isOpen, onClose, onSave, order }: OrderModa
                     ...formData,
                     shippingAddress: { ...formData.shippingAddress, province: e.target.value }
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="Bangkok"
                 />
               </div>
@@ -323,7 +323,7 @@ export default function OrderModal({ isOpen, onClose, onSave, order }: OrderModa
                     ...formData,
                     shippingAddress: { ...formData.shippingAddress, postalCode: e.target.value }
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="10110"
                 />
               </div>
@@ -339,7 +339,7 @@ export default function OrderModal({ isOpen, onClose, onSave, order }: OrderModa
               required
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
             >
               <option value="pending">Pending</option>
               <option value="processing">Processing</option>
@@ -357,7 +357,7 @@ export default function OrderModal({ isOpen, onClose, onSave, order }: OrderModa
               value={formData.note}
               onChange={(e) => setFormData({ ...formData, note: e.target.value })}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               placeholder="Additional notes or instructions"
             />
           </div>
