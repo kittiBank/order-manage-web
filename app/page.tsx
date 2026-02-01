@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { showSuccessAlert, showErrorAlert } from '@/lib/sweetAlert';
-import { useUser } from '@/app/contexts/UserContext';
+import { showSuccessAlert, showErrorAlert } from "@/lib/sweetAlert";
+import { useUser } from "@/app/contexts/UserContext";
+import { authAPI } from "@/lib/api/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,30 +20,43 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Mock authentication - replace with real API later
-    setTimeout(() => {
-      // Mock user data based on email
-      const mockUser = {
-        id: 'USR001',
-        name: formData.email.split('@')[0].charAt(0).toUpperCase() + formData.email.split('@')[0].slice(1),
+    try {
+      // Call real API
+      const response = await authAPI.login({
         email: formData.email,
-        role: formData.email.includes('admin') ? 'Admin' as const : 'Manager' as const,
+        password: formData.password,
+      });
+
+      // Store user and tokens
+      const user = {
+        id: response.user.id,
+        name: response.user.name || response.user.email.split("@")[0],
+        email: response.user.email,
+        role: response.user.role as "ADMIN" | "SELLER" | "CUSTOMER",
       };
-      
-      login(mockUser);
+
+      login(user, response.accessToken, response.refreshToken);
       setIsLoading(false);
-      showSuccessAlert('Login Successful!', `Welcome back, ${mockUser.name}!`);
+      showSuccessAlert("Login Successful!", `Welcome back, ${user.name}!`);
+
       // Navigate to orders page
       setTimeout(() => {
         router.push("/order/infinite");
       }, 1500);
-    }, 1000);
+    } catch (error: any) {
+      setIsLoading(false);
+      console.error("Login error:", error);
+
+      // Show user-friendly error message
+      const errorMessage =
+        error.message || "Invalid email or password. Please try again.";
+      showErrorAlert("Login Failed", errorMessage);
+    }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-4">
       <div className="w-full max-w-md">
-
         {/* Login Card */}
         <div className="bg-wƒhite rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
@@ -85,6 +99,12 @@ export default function LoginPage() {
                 >
                   Password
                 </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  Forgot password?
+                </Link>
               </div>
               <input
                 id="password"
