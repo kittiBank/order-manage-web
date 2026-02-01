@@ -1,26 +1,40 @@
+export interface OrderItem {
+  productId: string;
+  productName?: string;
+  quantity: number;
+  price: number;
+}
+
+export interface ShippingAddress {
+  name: string;
+  phone: string;
+  address: string;
+  province: string;
+  postalCode: string;
+}
+
 export interface Order {
   id: string;
-  name: string;
-  category: string;
-  price: number;
-  quantity: number;
+  customerId: string;
+  items: OrderItem[];
+  shippingAddress: ShippingAddress;
+  note?: string;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   createdAt: string;
-  description?: string;
+  totalAmount?: number;
 }
 
 export interface OrderFormData {
-  name: string;
-  category: string;
-  price: number;
-  quantity: number;
+  customerId: string;
+  items: OrderItem[];
+  shippingAddress: ShippingAddress;
+  note?: string;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
-  description?: string;
 }
 
 export interface OrderFilters {
-  category?: string;
+  customerId?: string;
   minPrice?: number;
   maxPrice?: number;
-  sortBy?: 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc' | 'newest';
+  sortBy?: 'price-asc' | 'price-desc' | 'customer-asc' | 'customer-desc' | 'newest';
 }

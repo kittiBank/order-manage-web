@@ -37,22 +37,29 @@ export default function OrderTable({ orders, onEdit, onDelete }: OrderTableProps
     return colors[status];
   };
 
+  const calculateTotal = (order: Order) => {
+    return order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  };
+
   return (
     <div className="overflow-x-auto bg-white rounded-lg shadow">
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-blue-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">
-              Product Name
+              Order ID
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">
-              Category
+              Customer
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">
-              Price
+              Items
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">
-              Quantity
+              Shipping To
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">
+              Total Amount
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">
               Status
@@ -69,21 +76,35 @@ export default function OrderTable({ orders, onEdit, onDelete }: OrderTableProps
           {orders.map((order) => (
             <tr key={order.id} className="hover:bg-blue-50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">{order.name}</div>
-                {order.description && (
-                  <div className="text-sm text-gray-500">{order.description}</div>
-                )}
+                <div className="text-sm font-medium text-gray-900">#{order.id}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                  {order.category}
-                </span>
+                <div className="text-sm font-medium text-gray-900">{order.customerId}</div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {formatPrice(order.price)}
+              <td className="px-6 py-4">
+                <div className="text-sm text-gray-900">
+                  {order.items.length} item{order.items.length > 1 ? 's' : ''}
+                  <div className="text-xs text-gray-500 mt-1">
+                    {order.items.slice(0, 2).map((item, idx) => (
+                      <div key={idx}>
+                        {item.productName} x{item.quantity}
+                      </div>
+                    ))}
+                    {order.items.length > 2 && (
+                      <div className="text-blue-600">+{order.items.length - 2} more</div>
+                    )}
+                  </div>
+                </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {order.quantity}
+              <td className="px-6 py-4">
+                <div className="text-sm text-gray-900">{order.shippingAddress.name}</div>
+                <div className="text-xs text-gray-500">{order.shippingAddress.phone}</div>
+                <div className="text-xs text-gray-500">{order.shippingAddress.province}</div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm font-semibold text-gray-900">
+                  {formatPrice(calculateTotal(order))}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span

@@ -6,6 +6,7 @@ import { mockOrders } from '@/lib/mockOrders';
 import OrderTable from '@/app/components/OrderTable';
 import OrderFiltersComponent from '@/app/components/OrderFilters';
 import OrderModal from '@/app/components/OrderModal';
+import Navbar from '@/app/components/Navbar';
 import { showSuccessAlert, showConfirmDialog } from '@/lib/sweetAlert';
 
 export default function OrdersPage() {
@@ -20,40 +21,49 @@ export default function OrdersPage() {
   const filteredOrders = useMemo(() => {
     let result = [...orders];
 
-    // Filter by category
-    if (filters.category) {
-      result = result.filter((order) => order.category === filters.category);
+    // Filter by customer ID
+    if (filters.customerId) {
+      result = result.filter((order) => 
+        order.customerId.toLowerCase().includes(filters.customerId!.toLowerCase())
+      );
     }
 
-    // Filter by price range
+    // Calculate total for each order
+    const ordersWithTotal = result.map(order => ({
+      ...order,
+      totalAmount: order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    }));
+
+    // Filter by price range (total amount)
+    let filteredByPrice = ordersWithTotal;
     if (filters.minPrice !== undefined) {
-      result = result.filter((order) => order.price >= filters.minPrice!);
+      filteredByPrice = filteredByPrice.filter((order) => order.totalAmount >= filters.minPrice!);
     }
     if (filters.maxPrice !== undefined) {
-      result = result.filter((order) => order.price <= filters.maxPrice!);
+      filteredByPrice = filteredByPrice.filter((order) => order.totalAmount <= filters.maxPrice!);
     }
 
     // Sort
     switch (filters.sortBy) {
       case 'price-asc':
-        result.sort((a, b) => a.price - b.price);
+        filteredByPrice.sort((a, b) => a.totalAmount - b.totalAmount);
         break;
       case 'price-desc':
-        result.sort((a, b) => b.price - a.price);
+        filteredByPrice.sort((a, b) => b.totalAmount - a.totalAmount);
         break;
-      case 'name-asc':
-        result.sort((a, b) => a.name.localeCompare(b.name));
+      case 'customer-asc':
+        filteredByPrice.sort((a, b) => a.customerId.localeCompare(b.customerId));
         break;
-      case 'name-desc':
-        result.sort((a, b) => b.name.localeCompare(a.name));
+      case 'customer-desc':
+        filteredByPrice.sort((a, b) => b.customerId.localeCompare(a.customerId));
         break;
       case 'newest':
       default:
-        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        filteredByPrice.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         break;
     }
 
-    return result;
+    return filteredByPrice;
   }, [orders, filters]);
 
   // Pagination: Show only displayCount items
@@ -121,6 +131,7 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
+      <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
