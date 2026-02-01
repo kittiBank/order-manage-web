@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { OrderFilters } from '@/app/types/order';
-import { categories } from '@/lib/mockOrders';
 
 interface OrderFiltersComponentProps {
   filters: OrderFilters;
@@ -13,10 +12,10 @@ export default function OrderFiltersComponent({
   filters,
   onFiltersChange,
 }: OrderFiltersComponentProps) {
-  const handleCategoryChange = (category: string) => {
+  const handleCustomerIdChange = (customerId: string) => {
     onFiltersChange({
       ...filters,
-      category: category === 'all' ? undefined : category,
+      customerId: customerId || undefined,
     });
   };
 
@@ -38,35 +37,30 @@ export default function OrderFiltersComponent({
   };
 
   const resetFilters = () => {
-    onFiltersChange({});
+    onFiltersChange({ sortBy: 'newest' });
   };
 
   return (
     <div className="bg-white rounded-lg shadow p-6 mb-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Category Filter */}
+        {/* Customer ID Filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Category
+            Customer ID
           </label>
-          <select
-            value={filters.category || 'all'}
-            onChange={(e) => handleCategoryChange(e.target.value)}
+          <input
+            type="text"
+            value={filters.customerId || ''}
+            onChange={(e) => handleCustomerIdChange(e.target.value)}
+            placeholder="e.g., CUST001"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Categories</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* Min Price */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Min Price (฿)
+            Min Total (฿)
           </label>
           <input
             type="number"
@@ -80,7 +74,7 @@ export default function OrderFiltersComponent({
         {/* Max Price */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Max Price (฿)
+            Max Total (฿)
           </label>
           <input
             type="number"
@@ -102,10 +96,10 @@ export default function OrderFiltersComponent({
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="newest">Newest First</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-            <option value="name-asc">Name: A-Z</option>
-            <option value="name-desc">Name: Z-A</option>
+            <option value="price-asc">Total: Low to High</option>
+            <option value="price-desc">Total: High to Low</option>
+            <option value="customer-asc">Customer: A-Z</option>
+            <option value="customer-desc">Customer: Z-A</option>
           </select>
         </div>
       </div>

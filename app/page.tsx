@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { showSuccessAlert, showErrorAlert } from '@/lib/sweetAlert';
+import { useUser } from '@/app/contexts/UserContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useUser();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -19,8 +21,17 @@ export default function LoginPage() {
 
     // Mock authentication - replace with real API later
     setTimeout(() => {
+      // Mock user data based on email
+      const mockUser = {
+        id: 'USR001',
+        name: formData.email.split('@')[0].charAt(0).toUpperCase() + formData.email.split('@')[0].slice(1),
+        email: formData.email,
+        role: formData.email.includes('admin') ? 'Admin' as const : 'Manager' as const,
+      };
+      
+      login(mockUser);
       setIsLoading(false);
-      showSuccessAlert('Login Successful!', 'Welcome back to Order Management System');
+      showSuccessAlert('Login Successful!', `Welcome back, ${mockUser.name}!`);
       // Navigate to orders page
       setTimeout(() => {
         router.push("/order/infinite");
@@ -31,7 +42,6 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-4">
       <div className="w-full max-w-md">
-        {/* Logo/Icon */}
 
         {/* Login Card */}
         <div className="bg-wƒhite rounded-2xl shadow-xl p-8">
