@@ -53,7 +53,7 @@ export default function OrderFiltersComponent({
             value={filters.customerId || ''}
             onChange={(e) => handleCustomerIdChange(e.target.value)}
             placeholder="e.g., CUST001"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           />
         </div>
 
@@ -67,7 +67,7 @@ export default function OrderFiltersComponent({
             value={filters.minPrice || ''}
             onChange={(e) => handleMinPriceChange(e.target.value)}
             placeholder="0"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           />
         </div>
 
@@ -81,7 +81,7 @@ export default function OrderFiltersComponent({
             value={filters.maxPrice || ''}
             onChange={(e) => handleMaxPriceChange(e.target.value)}
             placeholder="999999"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           />
         </div>
 
@@ -93,7 +93,7 @@ export default function OrderFiltersComponent({
           <select
             value={filters.sortBy || 'newest'}
             onChange={(e) => handleSortChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           >
             <option value="newest">Newest First</option>
             <option value="price-asc">Total: Low to High</option>

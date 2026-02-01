@@ -1,112 +1,131 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { Order, OrderFilters, OrderFormData } from '@/app/types/order';
-import { mockOrders } from '@/lib/mockOrders';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Order as APIOrder, ordersAPI, GetOrdersQuery } from '@/lib/api/orders';
+import { OrderFilters, OrderFormData } from '@/app/types/order';
 import OrderTable from '@/app/components/OrderTable';
 import OrderFiltersComponent from '@/app/components/OrderFilters';
 import OrderModal from '@/app/components/OrderModal';
 import Navbar from '@/app/components/Navbar';
-import { showSuccessAlert, showConfirmDialog } from '@/lib/sweetAlert';
+import { showSuccessAlert, showConfirmDialog, showErrorAlert } from '@/lib/sweetAlert';
+import { useUser } from '@/app/contexts/UserContext';
+import { useRouter } from 'next/navigation';
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const router = useRouter();
+  const { user, accessToken } = useUser();
+  const queryClient = useQueryClient();
+  
   const [filters, setFilters] = useState<OrderFilters>({ sortBy: 'newest' });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  const [displayCount, setDisplayCount] = useState(5);
-  const [isLoading, setIsLoading] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<APIOrder | null>(null);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const limit = 10;
 
-  // Filter and Sort Logic
-  const filteredOrders = useMemo(() => {
-    let result = [...orders];
-
-    // Filter by customer ID
-    if (filters.customerId) {
-      result = result.filter((order) => 
-        order.customerId.toLowerCase().includes(filters.customerId!.toLowerCase())
-      );
+  // Redirect if not authenticated
+  React.useEffect(() => {
+    if (!user || !accessToken) {
+      router.push('/');
     }
+  }, [user, accessToken, router]);
 
-    // Calculate total for each order
-    const ordersWithTotal = result.map(order => ({
-      ...order,
-      totalAmount: order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    }));
-
-    // Filter by price range (total amount)
-    let filteredByPrice = ordersWithTotal;
-    if (filters.minPrice !== undefined) {
-      filteredByPrice = filteredByPrice.filter((order) => order.totalAmount >= filters.minPrice!);
-    }
-    if (filters.maxPrice !== undefined) {
-      filteredByPrice = filteredByPrice.filter((order) => order.totalAmount <= filters.maxPrice!);
-    }
-
-    // Sort
-    switch (filters.sortBy) {
-      case 'price-asc':
-        filteredByPrice.sort((a, b) => a.totalAmount - b.totalAmount);
-        break;
-      case 'price-desc':
-        filteredByPrice.sort((a, b) => b.totalAmount - a.totalAmount);
-        break;
-      case 'customer-asc':
-        filteredByPrice.sort((a, b) => a.customerId.localeCompare(b.customerId));
-        break;
-      case 'customer-desc':
-        filteredByPrice.sort((a, b) => b.customerId.localeCompare(a.customerId));
-        break;
-      case 'newest':
-      default:
-        filteredByPrice.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-    }
-
-    return filteredByPrice;
-  }, [orders, filters]);
-
-  // Pagination: Show only displayCount items
-  const displayedOrders = filteredOrders.slice(0, displayCount);
-  const hasMore = displayCount < filteredOrders.length;
-
-  const handleLoadMore = () => {
-    setIsLoading(true);
-    // Simulate loading
-    setTimeout(() => {
-      setDisplayCount((prev) => prev + 5);
-      setIsLoading(false);
-    }, 500);
+  // Build query params from filters
+  const queryParams: GetOrdersQuery = {
+    cursor,
+    limit,
+    customerId: filters.customerId,
+    // API only supports 'createdAt' and 'total' for sortBy
+    sortBy: filters.sortBy === 'price-asc' || filters.sortBy === 'price-desc'
+      ? 'total'
+      : 'createdAt',
+    sortOrder: filters.sortBy?.includes('desc') ? 'desc' : 'asc',
   };
+
+  // Fetch orders with React Query
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['orders', queryParams, accessToken],
+    queryFn: () => ordersAPI.getOrders(queryParams, accessToken!),
+    enabled: !!accessToken,
+    retry: 1,
+  });
+
+  // Create order mutation
+  const createOrderMutation = useMutation({
+    mutationFn: (formData: OrderFormData) => {
+      const createData = {
+        customerId: formData.customerId,
+        items: formData.items.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        shippingAddress: formData.shippingAddress,
+        shippingFee: 0,
+        note: formData.note,
+      };
+      return ordersAPI.createOrder(createData, accessToken!);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      setIsModalOpen(false);
+      showSuccessAlert('Order Created!', 'New order has been added successfully');
+    },
+    onError: (error: any) => {
+      showErrorAlert('Create Failed', error.message || 'Failed to create order');
+    },
+  });
+
+  // Update order mutation
+  const updateOrderMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => {
+      return ordersAPI.updateOrder(id, data, accessToken!);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      setIsModalOpen(false);
+      setEditingOrder(null);
+      showSuccessAlert('Order Updated!', 'Order has been updated successfully');
+    },
+    onError: (error: any) => {
+      showErrorAlert('Update Failed', error.message || 'Failed to update order');
+    },
+  });
+
+  // Delete order mutation
+  const deleteOrderMutation = useMutation({
+    mutationFn: (id: string) => ordersAPI.deleteOrder(id, accessToken!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      showSuccessAlert('Order Deleted!', 'Order has been deleted successfully');
+    },
+    onError: (error: any) => {
+      showErrorAlert('Delete Failed', error.message || 'Failed to delete order');
+    },
+  });
 
   const handleCreateOrder = (formData: OrderFormData) => {
-    const newOrder: Order = {
-      id: Date.now().toString(),
-      ...formData,
-      createdAt: new Date().toISOString(),
-    };
-    setOrders([newOrder, ...orders]);
-    setIsModalOpen(false);
-    showSuccessAlert('Order Created!', 'New order has been added successfully');
+    createOrderMutation.mutate(formData);
   };
 
-  const handleEditOrder = (order: Order) => {
+  const handleEditOrder = (order: APIOrder) => {
     setEditingOrder(order);
     setIsModalOpen(true);
   };
 
   const handleUpdateOrder = (formData: OrderFormData) => {
     if (editingOrder) {
-      setOrders(
-        orders.map((order) =>
-          order.id === editingOrder.id
-            ? { ...order, ...formData }
-            : order
-        )
-      );
-      setEditingOrder(null);
-      setIsModalOpen(false);
-      showSuccessAlert('Order Updated!', 'Order has been updated successfully');
+      const updateData = {
+        items: formData.items.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        shippingAddress: formData.shippingAddress,
+        note: formData.note,
+        status: formData.status,
+      };
+      updateOrderMutation.mutate({ id: editingOrder.id, data: updateData });
     }
   };
 
@@ -119,8 +138,7 @@ export default function OrdersPage() {
     );
     
     if (result.isConfirmed) {
-      setOrders(orders.filter((order) => order.id !== orderId));
-      showSuccessAlert('Deleted!', 'Order has been deleted successfully');
+      deleteOrderMutation.mutate(orderId);
     }
   };
 
@@ -128,6 +146,45 @@ export default function OrdersPage() {
     setIsModalOpen(false);
     setEditingOrder(null);
   };
+
+  const handleLoadMore = () => {
+    if (data?.pagination.nextCursor) {
+      setCursor(data.pagination.nextCursor);
+    }
+  };
+
+  // Convert API orders to display format
+  const orders = data?.data || [];
+  const pagination = data?.pagination;
+  const hasMore = pagination?.hasMore || false;
+
+  // Reset cursor when filters change
+  React.useEffect(() => {
+    setCursor(undefined);
+  }, [filters]);
+
+  // Apply client-side filters (price range and customer sort)
+  let filteredOrders = orders.filter(order => {
+    if (filters.minPrice !== undefined && order.total < filters.minPrice) {
+      return false;
+    }
+    if (filters.maxPrice !== undefined && order.total > filters.maxPrice) {
+      return false;
+    }
+    return true;
+  });
+
+  // Apply client-side customer sorting if needed
+  if (filters.sortBy === 'customer-asc') {
+    filteredOrders = [...filteredOrders].sort((a, b) => a.customerId.localeCompare(b.customerId));
+  } else if (filters.sortBy === 'customer-desc') {
+    filteredOrders = [...filteredOrders].sort((a, b) => b.customerId.localeCompare(a.customerId));
+  }
+
+  // Show loading state on initial load
+  if (!user || !accessToken) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
@@ -139,7 +196,7 @@ export default function OrdersPage() {
             <div>
               <h1 className="text-3xl font-bold text-blue-900">Order Management</h1>
               <p className="mt-2 text-sm text-gray-600">
-                Manage your orders with ease. Total: {filteredOrders.length} orders
+                Manage your orders with ease. Total: {pagination?.total || 0} orders
               </p>
             </div>
             <button
@@ -157,8 +214,56 @@ export default function OrdersPage() {
         {/* Filters */}
         <OrderFiltersComponent filters={filters} onFiltersChange={setFilters} />
 
-        {/* Table */}
-        {displayedOrders.length === 0 ? (
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex">
+              <svg className="h-5 w-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <h3 className="text-sm font-medium text-red-800">Error loading orders</h3>
+                <p className="text-sm text-red-700 mt-1">{(error as any)?.message || 'Failed to load orders'}</p>
+                <button 
+                  onClick={() => refetch()}
+                  className="mt-2 text-sm text-red-600 hover:text-red-500 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="bg-white rounded-lg shadow p-12 text-center">
+            <svg
+              className="animate-spin mx-auto h-12 w-12 text-blue-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <p className="mt-4 text-gray-600">Loading orders...</p>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && filteredOrders.length === 0 && (
           <div className="bg-white rounded-lg shadow p-12 text-center">
             <svg
               className="mx-auto h-12 w-12 text-gray-400"
@@ -178,10 +283,13 @@ export default function OrdersPage() {
               Get started by creating a new order.
             </p>
           </div>
-        ) : (
+        )}
+
+        {/* Table */}
+        {!isLoading && filteredOrders.length > 0 && (
           <>
             <OrderTable
-              orders={displayedOrders}
+              orders={filteredOrders as any}
               onEdit={handleEditOrder}
               onDelete={handleDeleteOrder}
             />
@@ -219,7 +327,7 @@ export default function OrdersPage() {
                       Loading...
                     </span>
                   ) : (
-                    `Load More (${filteredOrders.length - displayCount} remaining)`
+                    `Load More (${filteredOrders.length} of ${pagination?.total || 0})`
                   )}
                 </button>
               </div>
@@ -232,7 +340,7 @@ export default function OrdersPage() {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           onSave={editingOrder ? handleUpdateOrder : handleCreateOrder}
-          order={editingOrder}
+          order={editingOrder as any}
         />
       </div>
     </div>
