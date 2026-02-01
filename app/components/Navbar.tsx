@@ -17,7 +17,7 @@ export default function Navbar() {
     );
 
     if (result.isConfirmed) {
-      logout();
+      await logout();
       showSuccessAlert('Logged Out', 'You have been successfully logged out');
       setTimeout(() => {
         router.push('/');

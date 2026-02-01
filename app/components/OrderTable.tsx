@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Order } from '@/app/types/order';
+import { useUser } from '@/app/contexts/UserContext';
 
 interface OrderTableProps {
   orders: Order[];
@@ -10,6 +11,8 @@ interface OrderTableProps {
 }
 
 export default function OrderTable({ orders, onEdit, onDelete }: OrderTableProps) {
+  const { user } = useUser();
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('th-TH', {
       style: 'currency',
@@ -129,16 +132,18 @@ export default function OrderTable({ orders, onEdit, onDelete }: OrderTableProps
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => onEdit(order)}
-                    className="text-blue-600 hover:text-blue-900 mr-4"
+                    className="text-blue-600 hover:text-blue-900"
                   >
                     Edit
                   </button>
-                  <button
-                    onClick={() => onDelete(order.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Delete
-                  </button>
+                  {user?.role !== 'CUSTOMER' && (
+                    <button
+                      onClick={() => onDelete(order.id)}
+                      className="text-red-600 hover:text-red-900 ml-4"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))

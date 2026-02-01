@@ -38,7 +38,8 @@ export interface OrderFormData {
 
 export interface OrderFilters {
   customerId?: string;
+  status?: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
   minPrice?: number;
   maxPrice?: number;
-  sortBy?: 'price-asc' | 'price-desc' | 'customer-asc' | 'customer-desc' | 'newest';
+  sortBy?: 'price-asc' | 'price-desc' | 'customer-asc' | 'customer-desc' | 'newest' | 'oldest' | 'id-asc' | 'id-desc';
 }

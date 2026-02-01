@@ -153,6 +153,12 @@ export const ordersAPI = {
     data: UpdateOrderRequest,
     accessToken: string
   ): Promise<Order> {
+    console.log('=== Update Order Request ===');
+    console.log('ID:', id);
+    console.log('Data:', JSON.stringify(data, null, 2));
+    console.log('Token:', accessToken ? `${accessToken.substring(0, 20)}...` : 'NO TOKEN');
+    console.log('URL:', `${API_URL}${API_ENDPOINTS.ORDERS.UPDATE(id)}`);
+    
     const response = await fetch(`${API_URL}${API_ENDPOINTS.ORDERS.UPDATE(id)}`, {
       method: 'PATCH',
       headers: {
@@ -162,8 +168,11 @@ export const ordersAPI = {
       body: JSON.stringify(data),
     });
 
+    console.log('Response status:', response.status);
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Failed to update order' }));
+      console.error('Error response:', error);
       throw new Error(error.message || `HTTP error! status: ${response.status}`);
     }
 
